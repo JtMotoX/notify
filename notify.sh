@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # GET VARIABLES
 SCRIPTDIR="$(dirname "$(readlink -f "$0")")"
