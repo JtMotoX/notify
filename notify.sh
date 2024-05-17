@@ -1,4 +1,10 @@
-#!/bin/bash
+#!/bin/sh
+
+# Check if a command was provided
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 command"
+    exit 1
+fi
 
 # GET VARIABLES
 SCRIPTDIR="$(dirname "$(readlink -f "$0")")"
@@ -11,30 +17,27 @@ if [ "${PUSHOVER_USER}" = "" ]; then { echo "Please set the PUSHOVER_USER value:
 if [ "${PUSHOVER_TOKEN}" = "" ]; then { echo "Please set the PUSHOVER_TOKEN value: '${ENV_FILE}'"; FAILED=true; } fi
 if [ "${FAILED}" = "true" ]; then { exit 1; } fi
 
-# GET COMMAND
-cmd="$@"
-
-# ESCAPE HASH CHARACTER
-cmd=${cmd//#/\\#}
-
 # DETERMINE OUTPUT FILE
 OUTFILE=/tmp/pushover_$(date +%s).txt
 
 # RUN COMMAND
 started=$(date +%s)
-bash -c "${cmd}" 2>&1 | tee "${OUTFILE}"
-EXITCODE=${PIPESTATUS[0]}
+ret_file=$(mktemp -t)
+set -x
+{ "$@" 2>&1; echo "$?" >"${ret_file}"; } | tee "${OUTFILE}"
+{ set +x; } 2>/dev/null
+EXITCODE=$(cat "${ret_file}"; rm -f "${ret_file}")
 ended=$(date +%s)
 runtime_s=$((ended-started))
 
-if [[ "${runtime_s}" -lt 60 ]]; then
+if [ "${runtime_s}" -lt 60 ]; then
 	runtime=${runtime_s}" sec"
 else
 	runtime=$((${runtime_s} / 60))" min"
 fi
 
 # SET TITLE
-if [[ "${EXITCODE}" == "0" ]]; then
+if [ "${EXITCODE}" = "0" ]; then
 	TITLE="Success : ${runtime}"
 else
 	TITLE="Failed : ${runtime}"
@@ -50,7 +53,7 @@ MESSAGE="${OUTLINES}"
 rm -f "${OUTFILE}"
 
 # SEND NOTIFICATION
-if [[ "${PUSHOVER}" == "0" ]] || [[ $(echo "${PUSHOVER}" | tr '[:upper:]' '[:lower:]') == "false" ]]; then
+if [ "${PUSHOVER}" = "0" ] || [ "$(echo "${PUSHOVER}" | tr '[:upper:]' '[:lower:]')" = "false" ]; then
 	echo "Not sending push notification since PUSHOVER=${PUSHOVER}"
 else
 	curl -s \
@@ -68,14 +71,14 @@ play_sound() {
 	SOUNDSLEEP=$2
 	for i in `seq 1 ${SOUNDCOUND}`; do
 		printf "\a"
-		if [[ ${SOUNDCOUND} -ne ${i} ]]; then
+		if [ ${SOUNDCOUND} -ne ${i} ]; then
 			sleep ${SOUNDSLEEP}
 		fi
 	done
 }
 
 # PLAY SOUND
-if [[ ${EXITCODE} -eq 0 ]]; then
+if [ "${EXITCODE}" = "0" ]; then
 	play_sound 3 1
 else
 	play_sound 2 0.5
