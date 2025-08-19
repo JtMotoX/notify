@@ -23,7 +23,7 @@ OUTFILE=/tmp/pushover_$(date +%s).txt
 # RUN COMMAND
 started=$(date +%s)
 ret_file=$(mktemp -t)
-set -x
+#set -x
 { "$@" 2>&1; echo "$?" >"${ret_file}"; } | tee "${OUTFILE}"
 { set +x; } 2>/dev/null
 EXITCODE=$(cat "${ret_file}"; rm -f "${ret_file}")
