@@ -1,8 +1,38 @@
 #!/bin/sh
 
+# Initialize flags
+LOCAL_ONLY=false
+
+# Parse flags
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -l|--local-only)
+            LOCAL_ONLY=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [OPTIONS] command"
+            echo "Options:"
+            echo "  -l, --local-only    Only play sound notification, don't send pushover notification"
+            echo "  -h, --help          Show this help message"
+            exit 0
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [OPTIONS] command"
+            exit 1
+            ;;
+        *)
+            # This is not a flag, so it's the start of the command
+            break
+            ;;
+    esac
+done
+
 # Check if a command was provided
 if [ $# -eq 0 ]; then
-    echo "Usage: $0 command"
+    echo "Usage: $0 [OPTIONS] command"
+    echo "Use -h or --help for more information"
     exit 1
 fi
 
@@ -13,9 +43,13 @@ touch "${ENV_FILE}"
 if ! grep 'PUSHOVER_USER=' "${ENV_FILE}" >/dev/null 2>&1; then { echo "PUSHOVER_USER=" >>"${ENV_FILE}"; } fi
 if ! grep 'PUSHOVER_TOKEN=' "${ENV_FILE}" >/dev/null 2>&1; then { echo "PUSHOVER_TOKEN=" >>"${ENV_FILE}"; } fi
 . "${SCRIPTDIR}/.env"
-if [ "${PUSHOVER_USER}" = "" ]; then { echo "Please set the PUSHOVER_USER value: '${ENV_FILE}'"; FAILED=true; } fi
-if [ "${PUSHOVER_TOKEN}" = "" ]; then { echo "Please set the PUSHOVER_TOKEN value: '${ENV_FILE}'"; FAILED=true; } fi
-if [ "${FAILED}" = "true" ]; then { exit 1; } fi
+
+# Only check Pushover credentials if not running in local-only mode
+if [ "${LOCAL_ONLY}" = "false" ]; then
+    if [ "${PUSHOVER_USER}" = "" ]; then { echo "Please set the PUSHOVER_USER value: '${ENV_FILE}'"; FAILED=true; } fi
+    if [ "${PUSHOVER_TOKEN}" = "" ]; then { echo "Please set the PUSHOVER_TOKEN value: '${ENV_FILE}'"; FAILED=true; } fi
+    if [ "${FAILED}" = "true" ]; then { exit 1; } fi
+fi
 
 # DETERMINE OUTPUT FILE
 OUTFILE=/tmp/pushover_$(date +%s).txt
@@ -53,7 +87,9 @@ MESSAGE="${OUTLINES}"
 rm -f "${OUTFILE}"
 
 # SEND NOTIFICATION
-if [ "${PUSHOVER}" = "0" ] || [ "$(echo "${PUSHOVER}" | tr '[:upper:]' '[:lower:]')" = "false" ]; then
+if [ "${LOCAL_ONLY}" = "true" ]; then
+	echo "Running in local-only mode, not sending push notification" >/dev/null
+elif [ "${PUSHOVER}" = "0" ] || [ "$(echo "${PUSHOVER}" | tr '[:upper:]' '[:lower:]')" = "false" ]; then
 	echo "Not sending push notification since PUSHOVER=${PUSHOVER}"
 else
 	curl -s \
