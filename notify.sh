@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# IF YOU GET AN ERROR 'notify: Argument list too long', TRY THIS METHOD:
+# printf '%s\n' "${recent_logs}" | tee -a /tmp/backup.log | notify --title "SD Card Import Complete" --tail-lines 10 cat
+
+#########################
+
 # Initialize flags
 LOCAL_ONLY=false
 TAIL_LINES=3
@@ -19,7 +24,7 @@ while [ $# -gt 0 ]; do
 			CUSTOM_TITLE="$2"
 			shift 2
 			;;
-        --tail-lines)
+        -n|--tail-lines)
             if [ -z "$2" ] || [ "${2#-}" != "$2" ]; then
                 echo "Error: --tail-lines requires a numeric argument"
                 exit 1
@@ -32,7 +37,7 @@ while [ $# -gt 0 ]; do
             echo "Options:"
             echo "  -l, --local-only    Only play sound notification, don't send pushover notification"
 			echo "  -t, --title TITLE   Set custom title for the notification"
-            echo "  --tail-lines NUMBER  Number of lines to tail from output (default: 3)"
+            echo "  -n, --tail-lines NUMBER  Number of lines to tail from output (default: 3)"
             echo "  -h, --help          Show this help message"
             exit 0
             ;;
