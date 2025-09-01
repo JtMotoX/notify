@@ -2,6 +2,7 @@
 
 # Initialize flags
 LOCAL_ONLY=false
+TAIL_LINES=3
 
 # Parse flags
 while [ $# -gt 0 ]; do
@@ -10,10 +11,28 @@ while [ $# -gt 0 ]; do
             LOCAL_ONLY=true
             shift
             ;;
+		-t|--title)
+			if [ -z "$2" ] || [ "${2#-}" != "$2" ]; then
+				echo "Error: --title requires an argument"
+				exit 1
+			fi
+			CUSTOM_TITLE="$2"
+			shift 2
+			;;
+        --tail-lines)
+            if [ -z "$2" ] || [ "${2#-}" != "$2" ]; then
+                echo "Error: --tail-lines requires a numeric argument"
+                exit 1
+            fi
+            TAIL_LINES="$2"
+            shift 2
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS] command"
             echo "Options:"
             echo "  -l, --local-only    Only play sound notification, don't send pushover notification"
+			echo "  -t, --title TITLE   Set custom title for the notification"
+            echo "  --tail-lines NUMBER  Number of lines to tail from output (default: 3)"
             echo "  -h, --help          Show this help message"
             exit 0
             ;;
@@ -71,14 +90,17 @@ else
 fi
 
 # SET TITLE
+if [ "${CUSTOM_TITLE}" != "" ]; then
+	CUSTOM_TITLE_STRING="- ${CUSTOM_TITLE} "
+fi
 if [ "${EXITCODE}" = "0" ]; then
-	TITLE="Success : ${runtime}"
+	TITLE="Success ${CUSTOM_TITLE_STRING}: ${runtime}"
 else
-	TITLE="Failed : ${runtime}"
+	TITLE="Failed ${CUSTOM_TITLE_STRING}: ${runtime}"
 fi
 
 # GET LAST LINES FROM OUTPUT
-OUTLINES=$(cat "${OUTFILE}" | grep -v '^\s*$' | grep -v '^\x1b]' 2>/dev/null | tail -n 3)
+OUTLINES=$(cat "${OUTFILE}" | grep -v '^\s*$' | grep -v '^\x1b]' 2>/dev/null | tail -n "${TAIL_LINES}")
 
 # SET MESSAGE
 MESSAGE="${OUTLINES}"
