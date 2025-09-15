@@ -32,6 +32,14 @@ while [ $# -gt 0 ]; do
             TAIL_LINES="$2"
             shift 2
             ;;
+		--disable-title-prefix)
+			DISABLE_TITLE_PREFIX=true
+			shift
+			;;
+		--disable-title-suffix)
+			DISABLE_TITLE_SUFFIX=true
+			shift
+			;;
         -h|--help)
             echo "Usage: $0 [OPTIONS] command"
             echo "Options:"
@@ -96,12 +104,17 @@ fi
 
 # SET TITLE
 if [ "${CUSTOM_TITLE}" != "" ]; then
-	CUSTOM_TITLE_STRING="- ${CUSTOM_TITLE} "
+	TITLE="${CUSTOM_TITLE} "
 fi
-if [ "${EXITCODE}" = "0" ]; then
-	TITLE="Success ${CUSTOM_TITLE_STRING}: ${runtime}"
-else
-	TITLE="Failed ${CUSTOM_TITLE_STRING}: ${runtime}"
+if [ "${DISABLE_TITLE_PREFIX}" != "true" ]; then
+	if [ "${EXITCODE}" = "0" ]; then
+		TITLE="Success - ${TITLE}"
+	else
+		TITLE="Failed - ${TITLE}"
+	fi
+fi
+if [ "${DISABLE_TITLE_SUFFIX}" != "true" ]; then
+	TITLE="${TITLE}: ${runtime}"
 fi
 
 # GET LAST LINES FROM OUTPUT
