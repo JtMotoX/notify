@@ -8,6 +8,7 @@
 # Initialize flags
 LOCAL_ONLY=false
 TAIL_LINES=3
+PRIORITY=0 # https://pushover.net/api#priority
 
 # Parse flags
 while [ $# -gt 0 ]; do
@@ -40,12 +41,23 @@ while [ $# -gt 0 ]; do
 			DISABLE_TITLE_SUFFIX=true
 			shift
 			;;
+		--priority)
+			if [ -z "$2" ]; then
+				echo "Error: --priority requires an argument"
+				exit 1
+			fi
+			PRIORITY="$2"
+			shift 2
+			;;
         -h|--help)
             echo "Usage: $0 [OPTIONS] command"
             echo "Options:"
             echo "  -l, --local-only    Only play sound notification, don't send pushover notification"
 			echo "  -t, --title TITLE   Set custom title for the notification"
             echo "  -n, --tail-lines NUMBER  Number of lines to tail from output (default: 3)"
+			echo "  --priority NUMBER   Set priority of the notification (default: 0)"
+			echo "  --disable-title-prefix  Disable automatic 'Success -' or 'Failed -' prefix in title"
+			echo "  --disable-title-suffix  Disable automatic ': runtime' suffix in title"
             echo "  -h, --help          Show this help message"
             exit 0
             ;;
@@ -137,6 +149,7 @@ else
 			--form-string "token=${PUSHOVER_TOKEN}" \
 			--form-string "title=${TITLE}" \
 			--form-string "message=${MESSAGE}" \
+			--form-string "priority=${PRIORITY}" \
 			https://api.pushover.net/1/messages.json \
 			>/dev/null 2>&1
 fi
